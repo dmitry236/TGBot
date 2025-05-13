@@ -1,12 +1,30 @@
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, FSInputFile
-from keyboards.all_kb import main_kb
+from keyboards import main_kb
 from create_bot import bot
 from acetone_api import ask_acetone
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 start_router = Router()
 
+
+class Form(StatesGroup):
+    name = State()
+    title = State()
+    stikers = State()
+
+@start_router.message(F.text == "📝 Удалить фон изображения")
+async def start_create_stikers(message: Message, state: FSMContext):
+    await message.answer('Выберите короткое название, которое ' \
+    'будет использоваться в адресе Вашего набора. Например, ' \
+    'для этого набора используется короткое название «Animals»:\
+    https://telegram.me/addstickers/Animals') 
+    await state.set_state(Form.name)
+
+@start_router.message(F.text, Form.name)
+     
 
 @start_router.message(CommandStart())
 async def cmd_start(message: Message):
