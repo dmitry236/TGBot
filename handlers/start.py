@@ -6,7 +6,7 @@ from create_bot import bot
 from acetone_api import ask_acetone
 
 start_router = Router()
-#bot = Bot(token = "7318903608:AAFRrjYKK_h0eElR4ZIZzIftxq3Nzy_r508")
+
 
 @start_router.message(CommandStart())
 async def cmd_start(message: Message):
