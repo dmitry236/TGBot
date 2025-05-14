@@ -1,6 +1,6 @@
 import asyncio
 from create_bot import bot, dp
-from heandlers import start_router
+from handlers import start_router
 
 async def main():
     dp.include_router(start_router)
