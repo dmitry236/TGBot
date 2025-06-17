@@ -9,9 +9,10 @@ from aiogram.fsm.state import State, StatesGroup
 from create_stikerset import process_sticker_image, generate_pack_name, get_bot_username
 import os
 
-start_router = Router()
+router = Router()
 
-@start_router.message(CommandStart())
+
+@router.message(CommandStart())
 async def cmd_start(message: Message):
     await message.answer('Привет, этот бот умеет удалять фон изображения и создавать стикеры',
                           reply_markup=main_kb())
@@ -20,13 +21,13 @@ async def cmd_start(message: Message):
 class RemoveBackground(StatesGroup):
     get_photo = State()
     
-@start_router.message(F.text =='📝 Удалить фон изображения') 
+@router.message(F.text =='📝 Удалить фон изображения') 
 async def remove_background(message: Message, state = FSMContext):
     await message.answer('Отправьте изображение на котором нужно удалить фон')
     await state.set_state(RemoveBackground.get_photo)
 
 
-@start_router.message(RemoveBackground.get_photo, F.photo)
+@router.message(RemoveBackground.get_photo, F.photo)
 async def handle_photo(message: Message):
     photo = message.photo[-1] 
     file_id = photo.file_id
@@ -34,14 +35,15 @@ async def handle_photo(message: Message):
     file_path = file.file_path
     downloaded_file = await bot.download_file(file_path)
     
-    with open("downloaded_photo.jpg", "wb") as new_file:
+    with open("temp/downloaded_photo.png", "wb") as new_file:
         new_file.write(downloaded_file.read())
 
-    ask_acetone("downloaded_photo.jpg") 
+    ask_acetone("temp/downloaded_photo.png") 
     
-    await message.answer_document(document=FSInputFile('output.png'))
-    await message.answer("Ваше изображение готово", reply_markup=main_kb())
+    await message.answer_document(document=FSInputFile('temp/downloaded_photo.png'))
+    await message.answer('Ваше изображение готово', reply_markup=main_kb())
     
+
 
 
 class StickerCreation(StatesGroup):
@@ -49,12 +51,12 @@ class StickerCreation(StatesGroup):
     first_sticker = State()
     stickers = State()
 
-@start_router.message(F.text == "📚 Создать стикерпак")
+@router.message(F.text == "📚 Создать стикерпак")
 async def start_create_stikers(message: Message, state: FSMContext):
     await message.answer("Пожалуйста, отправьте название для вашего стикерпака") 
     await state.set_state(StickerCreation.name)
 
-@start_router.message(StickerCreation.name)
+@router.message(StickerCreation.name)
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(title=message.text)
     await message.answer(
@@ -63,13 +65,22 @@ async def process_name(message: Message, state: FSMContext):
     )
     await state.set_state(StickerCreation.first_sticker)
 
-@start_router.message(StickerCreation.first_sticker, F.photo)
+
+@router.message(StickerCreation.first_sticker, F.photo)
 async def process_first_sticker(message: Message, state: FSMContext):
     try:
-        file_path = f"temp/{message.photo[-1].file_id}.png"
-        await bot.download(message.photo[-1].file_id, destination=file_path)
-        
-        processed_path = process_sticker_image(file_path)
+        photo = message.photo[-1] 
+        file_id = photo.file_id
+        file = await bot.get_file(file_id)
+        file_path = file.file_path
+        downloaded_file = await bot.download_file(file_path)
+    
+        with open("temp/downloaded_photo.png", "wb") as new_file:
+            new_file.write(downloaded_file.read())
+
+        ask_acetone("temp/downloaded_photo.png")
+
+        processed_path = process_sticker_image("temp/downloaded_photo.png")
         
         data = await state.get_data()
         user_id = message.from_user.id
@@ -103,14 +114,21 @@ async def process_first_sticker(message: Message, state: FSMContext):
         )
         await state.clear()
 
-
-@start_router.message(StickerCreation.stickers, F.photo)
+@router.message(StickerCreation.stickers, F.photo)
 async def process_sticker(message: Message, state: FSMContext):
     try:
-        file_path = f"temp/{message.photo[-1].file_id}.png"
-        await bot.download(message.photo[-1].file_id, destination=file_path)
-        
-        processed_path = process_sticker_image(file_path)
+        photo = message.photo[-1] 
+        file_id = photo.file_id
+        file = await bot.get_file(file_id)
+        file_path = file.file_path
+        downloaded_file = await bot.download_file(file_path)
+    
+        with open("temp/downloaded_photo.png", "wb") as new_file:
+            new_file.write(downloaded_file.read())
+
+        ask_acetone("temp/downloaded_photo.png")
+
+        processed_path = process_sticker_image("temp/downloaded_photo.png")
         
         data = await state.get_data()
         pack_name = data['pack_name']
@@ -133,10 +151,10 @@ async def process_sticker(message: Message, state: FSMContext):
             reply_markup=second_kb()
         )
     except Exception as e:
-        await message.answer(f"Произошла ошибка при добавлении стикера: {str(e)}")
+        await message.answer(f"Произошла ошибка: {str(e)}")
         await state.clear()
 
-@start_router.message(StickerCreation.stickers, F.text == "✅ Завершить создание")
+@router.message(StickerCreation.stickers, F.text == "✅ Завершить создание")
 async def finish_creation(message: Message, state: FSMContext):
     data = await state.get_data()
     pack_name = data['pack_name']
@@ -146,8 +164,8 @@ async def finish_creation(message: Message, state: FSMContext):
     )
     await state.clear()
 
-@start_router.message(StickerCreation.first_sticker)
-@start_router.message(StickerCreation.stickers)
+@router.message(StickerCreation.first_sticker)
+@router.message(StickerCreation.stickers)
 async def wrong_input(message: Message):
     if not message.photo:
-        await message.answer("Пожалуйста, отправьте изображение для стикера")
+       await message.answer("Пожалуйста добавьте изображение для стикера")

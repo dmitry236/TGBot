@@ -1,5 +1,6 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
+
 def main_kb():
     kb_list = [
         [KeyboardButton(text="📝 Удалить фон изображения"), KeyboardButton(text="📚 Создать стикерпак")]
