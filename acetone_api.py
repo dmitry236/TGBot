@@ -7,7 +7,7 @@ def ask_acetone(img_path:str):
             files={
                 'image': ('temp/downloaded_photo.png', file.read()),
             },
-            headers={'Token': 'f3080e19-2527-4b1c-af6d-b5e73b8e3186'}
+            headers={'Token': ''}
         )
     if ans.headers['content-type'] in ('image/png', 'image/webp', 'image/jpeg'):
         with open('temp/downloaded_photo.png', 'wb') as file:
